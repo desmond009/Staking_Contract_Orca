@@ -3,13 +3,13 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "src/Contract.sol";
+import "../src/OrcaCoin.sol";
 
-contract TestContract is Test {
-    Contract c;
+contract OrcaCoinTest is Test {
+    OrcaCoin c;
 
     function setUp() public {
-        c = new Contract();
+        c = new OrcaCoin();
     }
 
     function testBar() public {
