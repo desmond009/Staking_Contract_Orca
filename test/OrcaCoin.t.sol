@@ -6,18 +6,15 @@ import "forge-std/Test.sol";
 import "../src/OrcaCoin.sol";
 
 contract OrcaCoinTest is Test {
-    OrcaCoin c;
+    OrcaCoin oc;
 
     function setUp() public {
-        c = new OrcaCoin();
+        oc = new OrcaCoin(address(this));
     }
 
-    function testBar() public {
-        assertEq(uint256(1), uint256(1), "ok");
+    // CHeck that the initial supply will be zero
+    function testInitalSupply() public view {
+        assert(oc.totalSupply() == 0);
     }
 
-    function testFoo(uint256 x) public {
-        vm.assume(x < type(uint128).max);
-        assertEq(x + x, x * 2);
-    }
 }
