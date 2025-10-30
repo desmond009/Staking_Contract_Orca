@@ -17,4 +17,16 @@ contract OrcaCoinTest is Test {
         assert(oc.totalSupply() == 0);
     }
 
+    function testMint() public {
+        oc.mint(msg.sender, 100);
+        assert(oc.balanceOf(msg.sender) == 100);
+    }
+
+    function testChangingStakingContract() public {
+        oc.updateStakingContractAddress(0x7361360D60BE09274EccfebAb510753cA894a7d7);
+        vm.startPrank(0x7361360D60BE09274EccfebAb510753cA894a7d7);
+        oc.mint(0x7361360D60BE09274EccfebAb510753cA894a7d7, 100);
+        assert(oc.balanceOf(0x7361360D60BE09274EccfebAb510753cA894a7d7) == 100);
+    }
+
 }
