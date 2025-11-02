@@ -11,3 +11,11 @@ export const TARGET_CHAIN_ID = Number(
 export const TARGET_NETWORK_NAME =
   import.meta.env.VITE_TARGET_NETWORK_NAME ?? 'Sepolia'
 
+// Debug logging
+console.log('🔧 Config loaded:', {
+  STAKING_CONTRACT_ADDRESS,
+  ORCA_TOKEN_ADDRESS,
+  TARGET_CHAIN_ID,
+  TARGET_NETWORK_NAME,
+})
+

@@ -89,7 +89,7 @@ function App() {
 
           <div className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-soft backdrop-blur">
             {account ? (
-              <AccountOverview formatted={formatted} tokenMeta={tokenMeta} />
+              <AccountOverview formatted={formatted} tokenMeta={tokenMeta} balances={balances} />
             ) : (
               <div className="mb-6 rounded-2xl border border-border/80 bg-background/40 p-6 text-center">
                 <p className="text-sm text-gray-400">

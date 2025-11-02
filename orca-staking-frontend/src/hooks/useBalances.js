@@ -40,12 +40,22 @@ export const useBalances = (account, isConnected) => {
     },
   })
 
-  // Log errors for debugging
+  // Log errors and data for debugging
   useEffect(() => {
     if (userInfoError) {
-      console.error('Error fetching userInfo:', userInfoError)
+      console.error('❌ Error fetching userInfo:', userInfoError)
     }
   }, [userInfoError])
+
+  useEffect(() => {
+    if (userInfo !== undefined) {
+      console.log('📊 UserInfo received:', {
+        account,
+        userInfo,
+        stakingContract: STAKING_CONTRACT_ADDRESS,
+      })
+    }
+  }, [userInfo, account])
 
   // Fetch pending rewards
   const { data: pendingRewards, refetch: refetchRewards } = useReadContract({
@@ -128,7 +138,9 @@ export const useBalances = (account, isConnected) => {
 
     // Debug logging
     if (hasStakingContract && account) {
-      console.log('Balance update:', {
+      console.log('💰 Balance update:', {
+        account,
+        stakingContract: STAKING_CONTRACT_ADDRESS,
         eth: eth.toString(),
         userInfo,
         userStake: userStake.toString(),

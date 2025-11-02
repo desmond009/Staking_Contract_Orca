@@ -1,4 +1,6 @@
-export const AccountOverview = ({ formatted, tokenMeta }) => {
+import { STAKING_CONTRACT_ADDRESS } from '../config'
+
+export const AccountOverview = ({ formatted, tokenMeta, balances }) => {
   return (
     <section className="mb-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -6,6 +8,12 @@ export const AccountOverview = ({ formatted, tokenMeta }) => {
           <h2 className="text-lg font-semibold text-white">Account Overview</h2>
           <p className="text-xs text-gray-400">Real-time staking stats</p>
         </div>
+      </div>
+      {/* Debug info */}
+      <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3">
+        <p className="text-xs font-mono text-yellow-200">
+          🔍 Debug: Contract {STAKING_CONTRACT_ADDRESS} | Staked Wei: {balances?.staked?.toString() || '0'}
+        </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border/70 bg-background/40 p-4">
