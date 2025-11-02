@@ -5,9 +5,9 @@ export const ORCA_TOKEN_ADDRESS =
   import.meta.env.VITE_ORCA_TOKEN_ADDRESS ?? '0x0000000000000000000000000000000000000000'
 
 export const TARGET_CHAIN_ID = Number(
-  import.meta.env.VITE_TARGET_CHAIN_ID ?? 31337,
+  import.meta.env.VITE_TARGET_CHAIN_ID ?? 11155111,
 )
 
 export const TARGET_NETWORK_NAME =
-  import.meta.env.VITE_TARGET_NETWORK_NAME ?? 'Localhost'
+  import.meta.env.VITE_TARGET_NETWORK_NAME ?? 'Sepolia'
 
