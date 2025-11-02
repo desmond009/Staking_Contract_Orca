@@ -9,7 +9,7 @@ contract OrcaCoinTest is Test {
     OrcaCoin oc;
 
     function setUp() public {
-        oc = new OrcaCoin(address(this));
+        oc = new OrcaCoin();
     }
 
     // CHeck that the initial supply will be zero

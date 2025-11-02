@@ -9,9 +9,7 @@ contract OrcaCoin is ERC20, Ownable {
     // Here we store the address of the staking contract
     address public stakingContract;
 
-    constructor(address _stakingContract) ERC20 ("OrcaCoin", "ORCA") Ownable(msg.sender) {
-        stakingContract = _stakingContract;
-    }
+    constructor() ERC20 ("OrcaCoin", "ORCA") Ownable(msg.sender) { }
 
     // Mint Function only call by the staking Contract address
     function mint(address _to, uint _amount) public {

@@ -14,7 +14,7 @@ contract StakingContract_OriginalTest is Test {
     receive() external payable {}
 
     function setUp() public {
-        orcaCoin = new OrcaCoin(address(this));     // Address doesn't matter
+        orcaCoin = new OrcaCoin();
         stakingContract = new StakingContract_Original(IOrcaCoin(address(orcaCoin)));
         orcaCoin.updateStakingContractAddress(address(stakingContract));
     }

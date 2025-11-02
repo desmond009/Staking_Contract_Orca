@@ -1,2 +1,13 @@
 [profile.ci.fuzz]
 runs = 10_000
+
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+[rpc_endpoints]
+sepolia = "API_KEY"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
