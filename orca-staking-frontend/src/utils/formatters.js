@@ -1,4 +1,4 @@
-import { formatEther, formatUnits } from 'ethers'
+import { formatEther, formatUnits } from 'viem'
 
 /**
  * Shortens an Ethereum address to a readable format

@@ -1,37 +1,36 @@
-import { useState } from 'react'
-import { formatEther } from 'ethers'
+import { useState, useEffect } from 'react'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { formatEther } from 'viem'
+import { stakingWithEmissionsAbi } from '../abi/stakingWithEmissions'
 import { parseEtherSafe } from '../utils/validators'
+import { STAKING_CONTRACT_ADDRESS } from '../config'
 
-export const useStaking = (stakingContract, signer, account, isCorrectNetwork, balances, refreshBalances, showToast) => {
+export const useStaking = (account, isCorrectNetwork, balances, refreshBalances, showToast) => {
   const [inputs, setInputs] = useState({ stake: '', unstake: '' })
   const [isLoading, setIsLoading] = useState({
     stake: false,
     unstake: false,
     claim: false,
-    connect: false,
   })
 
-  const executeTransaction = async (action, callback) => {
-    if (!signer || !stakingContract) {
-      showToast('error', 'Connect your wallet to continue')
-      return
-    }
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
 
-    setIsLoading((prev) => ({ ...prev, [action]: true }))
-    showToast('pending', 'Transaction pending...')
+  // Wait for transaction receipt
+  const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
+    hash,
+  })
 
-    try {
-      const tx = await callback()
-      await tx.wait()
+  // Handle transaction success/error
+  useEffect(() => {
+    if (isSuccess) {
       showToast('success', 'Transaction confirmed!')
-      await refreshBalances()
-    } catch (error) {
-      console.error(`${action} failed`, error)
-      showToast('error', error?.shortMessage ?? error?.message ?? 'Transaction failed')
-    } finally {
-      setIsLoading((prev) => ({ ...prev, [action]: false }))
+      refreshBalances()
+      setIsLoading({ stake: false, unstake: false, claim: false })
+    } else if (isError || error) {
+      showToast('error', error?.message ?? 'Transaction failed')
+      setIsLoading({ stake: false, unstake: false, claim: false })
     }
-  }
+  }, [isSuccess, isError, error, showToast, refreshBalances])
 
   const handleStake = async () => {
     const amountWei = parseEtherSafe(inputs.stake)
@@ -40,10 +39,23 @@ export const useStaking = (stakingContract, signer, account, isCorrectNetwork, b
       return
     }
 
-    await executeTransaction('stake', () =>
-      stakingContract.stake(amountWei, { value: amountWei }),
-    )
-    setInputs((prev) => ({ ...prev, stake: '' }))
+    setIsLoading((prev) => ({ ...prev, stake: true }))
+    showToast('pending', 'Transaction pending...')
+
+    try {
+      writeContract({
+        address: STAKING_CONTRACT_ADDRESS,
+        abi: stakingWithEmissionsAbi,
+        functionName: 'stake',
+        args: [amountWei],
+        value: amountWei,
+      })
+      setInputs((prev) => ({ ...prev, stake: '' }))
+    } catch (err) {
+      console.error('Stake failed', err)
+      showToast('error', err?.message ?? 'Transaction failed')
+      setIsLoading((prev) => ({ ...prev, stake: false }))
+    }
   }
 
   const handleUnstake = async () => {
@@ -53,12 +65,39 @@ export const useStaking = (stakingContract, signer, account, isCorrectNetwork, b
       return
     }
 
-    await executeTransaction('unstake', () => stakingContract.unstake(amountWei))
-    setInputs((prev) => ({ ...prev, unstake: '' }))
+    setIsLoading((prev) => ({ ...prev, unstake: true }))
+    showToast('pending', 'Transaction pending...')
+
+    try {
+      writeContract({
+        address: STAKING_CONTRACT_ADDRESS,
+        abi: stakingWithEmissionsAbi,
+        functionName: 'unstake',
+        args: [amountWei],
+      })
+      setInputs((prev) => ({ ...prev, unstake: '' }))
+    } catch (err) {
+      console.error('Unstake failed', err)
+      showToast('error', err?.message ?? 'Transaction failed')
+      setIsLoading((prev) => ({ ...prev, unstake: false }))
+    }
   }
 
   const handleClaim = async () => {
-    await executeTransaction('claim', () => stakingContract.claimEmissions())
+    setIsLoading((prev) => ({ ...prev, claim: true }))
+    showToast('pending', 'Transaction pending...')
+
+    try {
+      writeContract({
+        address: STAKING_CONTRACT_ADDRESS,
+        abi: stakingWithEmissionsAbi,
+        functionName: 'claimEmissions',
+      })
+    } catch (err) {
+      console.error('Claim failed', err)
+      showToast('error', err?.message ?? 'Transaction failed')
+      setIsLoading((prev) => ({ ...prev, claim: false }))
+    }
   }
 
   const maxStake = () => {
@@ -77,28 +116,39 @@ export const useStaking = (stakingContract, signer, account, isCorrectNetwork, b
     !isCorrectNetwork ||
     !stakeAmountWei ||
     stakeAmountWei > balances.eth ||
-    !stakingContract ||
-    isLoading.stake
+    !STAKING_CONTRACT_ADDRESS ||
+    isLoading.stake ||
+    isPending ||
+    isConfirming
 
   const unstakeDisabled =
     !account ||
     !isCorrectNetwork ||
     !unstakeAmountWei ||
     unstakeAmountWei > balances.staked ||
-    !stakingContract ||
-    isLoading.unstake
+    !STAKING_CONTRACT_ADDRESS ||
+    isLoading.unstake ||
+    isPending ||
+    isConfirming
 
   const claimDisabled =
     !account ||
     !isCorrectNetwork ||
     balances.pending === 0n ||
-    !stakingContract ||
-    isLoading.claim
+    !STAKING_CONTRACT_ADDRESS ||
+    isLoading.claim ||
+    isPending ||
+    isConfirming
 
   return {
     inputs,
     setInputs,
-    isLoading,
+    isLoading: {
+      ...isLoading,
+      stake: isLoading.stake || isPending || isConfirming,
+      unstake: isLoading.unstake || isPending || isConfirming,
+      claim: isLoading.claim || isPending || isConfirming,
+    },
     setIsLoading,
     handleStake,
     handleUnstake,
@@ -112,4 +162,3 @@ export const useStaking = (stakingContract, signer, account, isCorrectNetwork, b
     unstakeAmountWei,
   }
 }
-

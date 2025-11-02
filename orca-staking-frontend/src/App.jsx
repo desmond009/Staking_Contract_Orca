@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useWallet } from './hooks/useWallet'
 import { useBalances } from './hooks/useBalances'
 import { useToast } from './hooks/useToast.jsx'
 import { useStaking } from './hooks/useStaking'
 import { formatBalances } from './utils/formatters'
-import { isCorrectNetwork } from './utils/network'
 import {
   Header,
   AccountOverview,
@@ -20,28 +19,22 @@ function App() {
   const [activeTab, setActiveTab] = useState('stake')
 
   const {
-    provider,
-    signer,
     account,
-    network,
-    stakingContract,
-    stakingReadContract,
-    tokenContract,
-    connectWallet: connectWalletHook,
+    isConnected,
+    isCorrectNetwork,
+    connectWallet,
     disconnectWallet,
     switchNetwork,
+    isLoading: walletLoading,
   } = useWallet()
 
   const {
     balances,
     tokenMeta,
     refreshBalances,
-    loadTokenMetadata,
-  } = useBalances(provider, signer, account, stakingContract, stakingReadContract, tokenContract)
+  } = useBalances(account, isConnected)
 
   const { showToast, ToastComponent } = useToast()
-
-  const networkCorrect = useMemo(() => isCorrectNetwork(network), [network])
 
   const formatted = useMemo(
     () => formatBalances(balances, tokenMeta),
@@ -52,7 +45,6 @@ function App() {
     inputs,
     setInputs,
     isLoading,
-    setIsLoading,
     handleStake,
     handleUnstake,
     handleClaim,
@@ -63,21 +55,13 @@ function App() {
     claimDisabled,
     stakeAmountWei,
     unstakeAmountWei,
-  } = useStaking(stakingContract, signer, account, networkCorrect, balances, refreshBalances, showToast)
+  } = useStaking(account, isCorrectNetwork, balances, refreshBalances, showToast)
 
-  const connectWallet = async () => {
-    setIsLoading((prev) => ({ ...prev, connect: true }))
+  const handleConnectWallet = async () => {
     try {
-      await connectWalletHook()
-      // After connecting, refresh balances and load metadata
-      await refreshBalances()
-      if (tokenContract) {
-        await loadTokenMetadata()
-      }
+      await connectWallet()
     } catch (error) {
       showToast('error', error.message ?? 'Wallet connection failed')
-    } finally {
-      setIsLoading((prev) => ({ ...prev, connect: false }))
     }
   }
 
@@ -96,9 +80,9 @@ function App() {
         <div className="w-full max-w-xl">
           <Header
             account={account}
-            isCorrectNetwork={networkCorrect}
-            isLoading={isLoading.connect}
-            onConnect={connectWallet}
+            isCorrectNetwork={isCorrectNetwork}
+            isLoading={walletLoading}
+            onConnect={handleConnectWallet}
             onDisconnect={disconnectWallet}
             onSwitchNetwork={handleSwitchNetwork}
           />
@@ -153,7 +137,7 @@ function App() {
                 isLoading={isLoading.claim}
                 onClaim={handleClaim}
               />
-            )}
+              )}
 
             <NetworkWarning account={account} onSwitchNetwork={handleSwitchNetwork} />
             <NoWalletWarning />

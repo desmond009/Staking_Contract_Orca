@@ -1,4 +1,4 @@
-import { formatUnits } from 'ethers'
+import { formatUnits } from 'viem'
 
 export const ClaimTab = ({
   balances,

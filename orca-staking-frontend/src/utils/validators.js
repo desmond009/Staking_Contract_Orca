@@ -1,4 +1,4 @@
-import { parseEther } from 'ethers'
+import { parseEther } from 'viem'
 
 /**
  * Safely parses an ether string to BigInt, returns null if invalid
