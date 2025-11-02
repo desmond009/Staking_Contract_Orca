@@ -9,7 +9,10 @@ export const useWallet = () => {
   const chainId = useChainId()
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
 
-  const isCorrectNetwork = chainId === TARGET_CHAIN_ID
+  // Compare chain IDs (handle both number and bigint)
+  const isCorrectNetwork = chainId 
+    ? (Number(chainId) === Number(TARGET_CHAIN_ID) || chainId === TARGET_CHAIN_ID)
+    : false
 
   const connectWallet = async () => {
     // Try injected connector first (MetaMask), then others

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
 import { stakingWithEmissionsAbi } from '../abi/stakingWithEmissions'
 import { parseEtherSafe } from '../utils/validators'
@@ -13,6 +14,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     claim: false,
   })
 
+  const queryClient = useQueryClient()
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   // Wait for transaction receipt
@@ -22,20 +24,37 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
 
   // Handle transaction success/error
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash) {
       showToast('success', 'Transaction confirmed!')
-      refreshBalances()
       setIsLoading({ stake: false, unstake: false, claim: false })
+      
+      // Invalidate all wagmi queries to force refresh
+      queryClient.invalidateQueries()
+      
+      // Also manually refresh balances with delays
+      setTimeout(() => {
+        refreshBalances()
+      }, 1000)
+      
+      // Second refresh after a longer delay to ensure blockchain state is fully updated
+      setTimeout(() => {
+        refreshBalances()
+      }, 5000)
     } else if (isError || error) {
       showToast('error', error?.message ?? 'Transaction failed')
       setIsLoading({ stake: false, unstake: false, claim: false })
     }
-  }, [isSuccess, isError, error, showToast, refreshBalances])
+  }, [isSuccess, isError, error, hash, showToast, refreshBalances, queryClient])
 
   const handleStake = async () => {
     const amountWei = parseEtherSafe(inputs.stake)
     if (!amountWei) {
       showToast('error', 'Enter a valid amount of ETH to stake')
+      return
+    }
+
+    if (!STAKING_CONTRACT_ADDRESS || STAKING_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      showToast('error', 'Staking contract address not configured')
       return
     }
 
@@ -91,7 +110,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
       writeContract({
         address: STAKING_CONTRACT_ADDRESS,
         abi: stakingWithEmissionsAbi,
-        functionName: 'claimEmissions',
+        functionName: 'claimRewards',
       })
     } catch (err) {
       console.error('Claim failed', err)

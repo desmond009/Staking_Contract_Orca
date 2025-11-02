@@ -17,6 +17,9 @@ export const useBalances = (account, isConnected) => {
   const { data: ethBalance, refetch: refetchEth } = useBalance({
     address: account,
     enabled: !!account && isConnected,
+    query: {
+      refetchInterval: 5000, // Refetch every 5 seconds when enabled
+    },
   })
 
   const hasStakingContract =
@@ -26,13 +29,23 @@ export const useBalances = (account, isConnected) => {
     ORCA_TOKEN_ADDRESS && ORCA_TOKEN_ADDRESS !== ZERO_ADDRESS
 
   // Fetch user info from staking contract
-  const { data: userInfo, refetch: refetchUserInfo } = useReadContract({
+  const { data: userInfo, refetch: refetchUserInfo, error: userInfoError } = useReadContract({
     address: hasStakingContract && STAKING_CONTRACT_ADDRESS !== ZERO_ADDRESS ? STAKING_CONTRACT_ADDRESS : undefined,
     abi: stakingWithEmissionsAbi,
     functionName: 'userInfo',
     args: account ? [account] : undefined,
     enabled: !!account && isConnected && hasStakingContract,
+    query: {
+      refetchInterval: 5000, // Refetch every 5 seconds when enabled
+    },
   })
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (userInfoError) {
+      console.error('Error fetching userInfo:', userInfoError)
+    }
+  }, [userInfoError])
 
   // Fetch pending rewards
   const { data: pendingRewards, refetch: refetchRewards } = useReadContract({
@@ -40,14 +53,20 @@ export const useBalances = (account, isConnected) => {
     abi: stakingWithEmissionsAbi,
     functionName: 'getRewards',
     enabled: !!account && isConnected && hasStakingContract,
+    query: {
+      refetchInterval: 5000, // Refetch every 5 seconds when enabled
+    },
   })
 
   // Fetch total staked
   const { data: totalStaked, refetch: refetchTotalStaked } = useReadContract({
     address: hasStakingContract && STAKING_CONTRACT_ADDRESS !== ZERO_ADDRESS ? STAKING_CONTRACT_ADDRESS : undefined,
     abi: stakingWithEmissionsAbi,
-    functionName: 'totalStake',
+    functionName: 'totalStaked',
     enabled: hasStakingContract,
+    query: {
+      refetchInterval: 10000, // Refetch every 10 seconds when enabled
+    },
   })
 
   // Fetch ORCA token balance
@@ -92,10 +111,32 @@ export const useBalances = (account, isConnected) => {
     }
 
     const eth = ethBalance?.value ?? 0n
-    const userStake = userInfo?.stakedAmount ?? userInfo?.amountStaked ?? userInfo?.[0] ?? 0n
+    
+    // userInfo returns a tuple: [amountStaked, lastRewardTime, rewardDebt]
+    let userStake = 0n
+    if (userInfo) {
+      if (Array.isArray(userInfo)) {
+        userStake = userInfo[0] ?? 0n
+      } else if (typeof userInfo === 'object') {
+        userStake = userInfo.amountStaked ?? userInfo.stakedAmount ?? userInfo[0] ?? 0n
+      }
+    }
+    
     const pending = pendingRewards ?? 0n
     const total = totalStaked ?? 0n
     const orca = orcaBalance ?? 0n
+
+    // Debug logging
+    if (hasStakingContract && account) {
+      console.log('Balance update:', {
+        eth: eth.toString(),
+        userInfo,
+        userStake: userStake.toString(),
+        pending: pending.toString(),
+        total: total.toString(),
+        orca: orca.toString(),
+      })
+    }
 
     setBalances({
       eth,
@@ -104,7 +145,7 @@ export const useBalances = (account, isConnected) => {
       orca,
       totalStaked: total,
     })
-  }, [account, isConnected, ethBalance, userInfo, pendingRewards, totalStaked, orcaBalance])
+  }, [account, isConnected, ethBalance, userInfo, pendingRewards, totalStaked, orcaBalance, hasStakingContract])
 
   // Refresh rewards every 10 seconds
   useEffect(() => {
@@ -121,30 +162,59 @@ export const useBalances = (account, isConnected) => {
   useWatchBlockNumber({
     onBlockNumber: () => {
       if (account && isConnected) {
-        refetchEth()
-        if (hasStakingContract) {
-          refetchUserInfo()
-          refetchRewards()
-          refetchTotalStaked()
-        }
-        if (hasTokenContract) {
-          refetchOrca()
-        }
+        // Small delay to ensure blockchain state is updated
+        setTimeout(() => {
+          refetchEth()
+          if (hasStakingContract) {
+            refetchUserInfo()
+            refetchRewards()
+            refetchTotalStaked()
+          }
+          if (hasTokenContract) {
+            refetchOrca()
+          }
+        }, 1000)
       }
     },
   })
 
   const refreshBalances = async () => {
     if (account && isConnected) {
-      await Promise.all([
-        refetchEth(),
-        hasStakingContract && Promise.all([
-          refetchUserInfo(),
-          refetchRewards(),
-          refetchTotalStaked(),
-        ]),
-        hasTokenContract && refetchOrca(),
-      ])
+      try {
+        // Refetch all balances - wait a bit for blockchain state to update
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        const promises = [refetchEth()]
+        
+        if (hasStakingContract) {
+          promises.push(
+            refetchUserInfo(),
+            refetchRewards(),
+            refetchTotalStaked()
+          )
+        }
+        
+        if (hasTokenContract) {
+          promises.push(refetchOrca())
+        }
+        
+        await Promise.all(promises)
+        
+        // Force another refetch after a short delay to ensure we get the latest state
+        setTimeout(() => {
+          refetchEth()
+          if (hasStakingContract) {
+            refetchUserInfo()
+            refetchRewards()
+            refetchTotalStaked()
+          }
+          if (hasTokenContract) {
+            refetchOrca()
+          }
+        }, 3000)
+      } catch (error) {
+        console.error('Error refreshing balances:', error)
+      }
     }
   }
 

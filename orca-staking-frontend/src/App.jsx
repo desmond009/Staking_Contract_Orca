@@ -139,7 +139,11 @@ function App() {
               />
               )}
 
-            <NetworkWarning account={account} onSwitchNetwork={handleSwitchNetwork} />
+            <NetworkWarning 
+              account={account} 
+              isCorrectNetwork={isCorrectNetwork}
+              onSwitchNetwork={handleSwitchNetwork} 
+            />
             <NoWalletWarning />
           </div>
         </div>

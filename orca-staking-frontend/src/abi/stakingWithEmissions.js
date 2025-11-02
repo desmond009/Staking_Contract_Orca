@@ -15,7 +15,7 @@ export const stakingWithEmissionsAbi = [
   },
   {
     type: 'function',
-    name: 'claimEmissions',
+    name: 'claimRewards',
     stateMutability: 'nonpayable',
     inputs: [],
     outputs: [],
@@ -33,14 +33,14 @@ export const stakingWithEmissionsAbi = [
     stateMutability: 'view',
     inputs: [{ name: '', type: 'address' }],
     outputs: [
-      { name: 'stakedAmount', type: 'uint256' },
+      { name: 'amountStaked', type: 'uint256' },
+      { name: 'lastRewardTime', type: 'uint256' },
       { name: 'rewardDebt', type: 'uint256' },
-      { name: 'lastUpdate', type: 'uint256' },
     ],
   },
   {
     type: 'function',
-    name: 'totalStake',
+    name: 'totalStaked',
     stateMutability: 'view',
     inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
