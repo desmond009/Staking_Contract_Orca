@@ -12,7 +12,7 @@ export const AccountOverview = ({ formatted, tokenMeta, balances }) => {
       {/* Debug info */}
       <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3">
         <p className="text-xs font-mono text-yellow-200">
-          🔍 Debug: Contract {STAKING_CONTRACT_ADDRESS} | Staked Wei: {balances?.staked?.toString() || '0'}
+          🔍 Debug: Contract {STAKING_CONTRACT_ADDRESS} | Staked Wei: {balances?.staked?.toString() || '0'} | Staked ETH: {formatted?.staked || '0.00'}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
