@@ -11,9 +11,10 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 10000, // Consider data fresh for 10 seconds
+      retry: 1, // Reduced retries to avoid rate limiting
+      retryDelay: (attemptIndex) => Math.min(5000 * (attemptIndex + 1), 30000), // Longer delays between retries
+      staleTime: 30000, // Consider data fresh for 30 seconds (increased from 10s)
+      gcTime: 300000, // Keep data in cache for 5 minutes
     },
   },
 })

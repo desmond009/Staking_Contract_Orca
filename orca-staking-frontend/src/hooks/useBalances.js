@@ -18,7 +18,9 @@ export const useBalances = (account, isConnected) => {
     address: account,
     enabled: !!account && isConnected,
     query: {
-      refetchInterval: 12000, // Refetch every 12 seconds when enabled
+      refetchInterval: 30000, // Refetch every 30 seconds when enabled (reduced from 12s)
+      retry: 1, // Only retry once
+      retryDelay: 5000, // Wait 5 seconds before retry
     },
   })
 
@@ -36,7 +38,7 @@ export const useBalances = (account, isConnected) => {
     args: account ? [account] : undefined,
     enabled: !!account && isConnected && hasStakingContract,
     query: {
-      refetchInterval: 15000, // Refetch every 15 seconds when enabled
+      refetchInterval: 30000, // Refetch every 30 seconds when enabled (reduced from 15s)
       retry: false, // Don't retry if it fails, use fallback instead
     },
   })
@@ -49,7 +51,9 @@ export const useBalances = (account, isConnected) => {
     args: account ? [account] : undefined,
     enabled: !!account && isConnected && hasStakingContract,
     query: {
-      refetchInterval: 15000, // Refetch every 15 seconds when enabled
+      refetchInterval: 30000, // Refetch every 30 seconds when enabled (reduced from 15s)
+      retry: 1,
+      retryDelay: 5000,
     },
   })
 
@@ -78,7 +82,9 @@ export const useBalances = (account, isConnected) => {
     functionName: 'getRewards',
     enabled: !!account && isConnected && hasStakingContract,
     query: {
-      refetchInterval: 10000, // Refetch every 10 seconds when enabled
+      refetchInterval: 30000, // Refetch every 30 seconds when enabled (reduced from 10s)
+      retry: 1,
+      retryDelay: 5000,
     },
   })
 
@@ -89,7 +95,9 @@ export const useBalances = (account, isConnected) => {
     functionName: 'totalStaked',
     enabled: hasStakingContract,
     query: {
-      refetchInterval: 20000, // Refetch every 20 seconds when enabled
+      refetchInterval: 60000, // Refetch every 60 seconds when enabled (reduced from 20s)
+      retry: 1,
+      retryDelay: 5000,
     },
   })
 
@@ -181,16 +189,7 @@ export const useBalances = (account, isConnected) => {
     })
   }, [account, isConnected, ethBalance, userInfo, stakersBalance, pendingRewards, totalStaked, orcaBalance, hasStakingContract])
 
-  // Refresh rewards every 10 seconds
-  useEffect(() => {
-    if (!account || !isConnected || !hasStakingContract) return
-
-    const interval = setInterval(() => {
-      refetchRewards()
-    }, 10000)
-
-    return () => clearInterval(interval)
-  }, [account, isConnected, hasStakingContract, refetchRewards])
+  // Removed aggressive refresh interval - relying on refetchInterval in hooks instead
 
   // Watch for new blocks to auto-refresh balances (disabled to reduce RPC load)
   // The regular refetch intervals above will handle updates
@@ -217,38 +216,24 @@ export const useBalances = (account, isConnected) => {
     if (account && isConnected) {
       try {
         // Refetch all balances - wait a bit for blockchain state to update
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
-        const promises = [refetchEth()]
+        // Sequential refetch to avoid overwhelming RPC
+        await refetchEth()
         
         if (hasStakingContract) {
-          promises.push(
+          await Promise.all([
             refetchStakersBalance(), // Primary source for staked amount
-            refetchUserInfo(), // May fail, but try anyway
             refetchRewards(),
-            refetchTotalStaked()
-          )
+          ])
+          // Optional: Try userInfo but don't fail if it errors
+          refetchUserInfo().catch(() => {})
+          refetchTotalStaked().catch(() => {})
         }
         
         if (hasTokenContract) {
-          promises.push(refetchOrca())
+          await refetchOrca()
         }
-        
-        await Promise.all(promises)
-        
-        // Force another refetch after a short delay to ensure we get the latest state
-        setTimeout(() => {
-          refetchEth()
-          if (hasStakingContract) {
-            refetchStakersBalance()
-            refetchUserInfo()
-            refetchRewards()
-            refetchTotalStaked()
-          }
-          if (hasTokenContract) {
-            refetchOrca()
-          }
-        }, 3000)
       } catch (error) {
         console.error('Error refreshing balances:', error)
       }
@@ -262,3 +247,4 @@ export const useBalances = (account, isConnected) => {
     refreshPendingRewards: refetchRewards,
   }
 }
+
