@@ -110,7 +110,7 @@ export const useBalances = (account, isConnected) => {
     address: hasStakingContract && STAKING_CONTRACT_ADDRESS !== ZERO_ADDRESS ? STAKING_CONTRACT_ADDRESS : undefined,
     abi: stakingWithEmissionsAbi,
     functionName: 'userInfo',
-    args: account ? [account] : undefined,
+    args: account && typeof account === 'string' && account.length > 0 ? [account] : undefined,
     enabled: false, // Disabled - only fetch manually if needed
     query: {
       refetchInterval: false, // Disabled
@@ -124,8 +124,8 @@ export const useBalances = (account, isConnected) => {
     address: hasStakingContract && STAKING_CONTRACT_ADDRESS !== ZERO_ADDRESS ? STAKING_CONTRACT_ADDRESS : undefined,
     abi: stakingWithEmissionsAbi,
     functionName: 'stakers_Balance',
-    args: account ? [account] : undefined,
-    enabled: enableFetch2 && !!account && isConnected && hasStakingContract,
+    args: account && typeof account === 'string' && account.length > 0 ? [account] : undefined,
+    enabled: enableFetch2 && !!account && typeof account === 'string' && account.length > 0 && isConnected && hasStakingContract,
     query: {
       refetchInterval: false, // Disable auto-refetch to reduce concurrent requests
       retry: (failureCount, error) => {
@@ -263,8 +263,8 @@ export const useBalances = (account, isConnected) => {
     address: hasTokenContract && ORCA_TOKEN_ADDRESS !== ZERO_ADDRESS ? ORCA_TOKEN_ADDRESS : undefined,
     abi: erc20Abi,
     functionName: 'balanceOf',
-    args: account ? [account] : undefined,
-    enabled: enableFetch2 && !!account && isConnected && hasTokenContract,
+    args: account && typeof account === 'string' && account.length > 0 ? [account] : undefined,
+    enabled: enableFetch2 && !!account && typeof account === 'string' && account.length > 0 && isConnected && hasTokenContract,
     query: {
       refetchInterval: false, // Disable auto-refetch
       retry: (failureCount, error) => {

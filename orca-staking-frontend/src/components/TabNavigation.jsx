@@ -2,13 +2,13 @@ import { TAB_CONFIG } from '../constants'
 
 export const TabNavigation = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="mb-4 flex items-center gap-3 overflow-x-auto border-b border-border/60 sm:mb-6 sm:gap-6">
+    <nav className="mb-4 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide sm:mb-6 sm:gap-6">
       {TAB_CONFIG.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onTabChange(tab.id)}
-          className={`whitespace-nowrap pb-2.5 text-xs font-medium transition sm:pb-3 sm:text-sm ${
+          className={`min-h-[44px] whitespace-nowrap pb-2.5 text-xs font-medium transition active:scale-95 sm:min-h-0 sm:pb-3 sm:text-sm ${
             activeTab === tab.id
               ? 'text-white'
               : 'text-gray-500 hover:text-gray-200'

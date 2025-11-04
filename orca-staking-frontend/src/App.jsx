@@ -78,7 +78,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background/95 bg-[radial-gradient(circle_at_top_left,_rgba(50,184,198,0.15),_transparent_55%),_radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.1),_transparent_55%)] text-white">
       <ToastComponent />
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:py-16">
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-3 py-6 sm:px-4 sm:py-8 md:px-6 md:py-12 lg:py-16">
         <div className="w-full max-w-xl">
           <Header
             account={account}
@@ -89,7 +89,7 @@ function App() {
             onSwitchNetwork={handleSwitchNetwork}
           />
 
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-soft backdrop-blur sm:rounded-3xl sm:p-6">
+          <div className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-soft backdrop-blur sm:rounded-2xl sm:p-4 md:rounded-3xl md:p-6">
             {account ? (
               <AccountOverview formatted={formatted} tokenMeta={tokenMeta} balances={balances} />
             ) : (

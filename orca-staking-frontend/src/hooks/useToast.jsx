@@ -59,22 +59,23 @@ export const useToast = () => {
     const icon = getToastIcon(toast.type)
 
     return (
-      <div className="fixed top-6 left-1/2 z-50 w-full max-w-sm -translate-x-1/2">
+      <div className="fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:top-6">
         <div
-          className={`flex items-start gap-3 rounded-xl border px-5 py-4 shadow-lg backdrop-blur ${variant.tone}`}
+          className={`flex items-start gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur sm:rounded-xl sm:px-5 sm:py-4 ${variant.tone}`}
         >
-          <div className="mt-1">{icon}</div>
-          <div className="flex-1 text-sm">
+          <div className="mt-0.5 flex-shrink-0">{icon}</div>
+          <div className="flex-1 text-xs sm:text-sm">
             <p className="font-medium">{variant.title}</p>
-            {toast.message ? <p className="mt-1 text-xs opacity-80">{toast.message}</p> : null}
+            {toast.message ? <p className="mt-1 text-[10px] opacity-80 sm:text-xs">{toast.message}</p> : null}
           </div>
           {toast.type !== 'pending' ? (
             <button
               type="button"
               onClick={hideToast}
-              className="text-xs text-gray-400 transition hover:text-gray-200"
+              className="mt-0.5 flex-shrink-0 text-xs text-gray-400 transition hover:text-gray-200 active:scale-95 sm:text-sm"
+              aria-label="Close toast"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           ) : null}
         </div>
