@@ -13,6 +13,7 @@ import {
   ClaimTab,
   NetworkWarning,
   NoWalletWarning,
+  NetworkConnectionWarning,
 } from './components'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
     balances,
     tokenMeta,
     refreshBalances,
+    hasNetworkErrors,
   } = useBalances(account, isConnected)
 
   const { showToast, ToastComponent } = useToast()
@@ -76,7 +78,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background/95 bg-[radial-gradient(circle_at_top_left,_rgba(50,184,198,0.15),_transparent_55%),_radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.1),_transparent_55%)] text-white">
       <ToastComponent />
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-4 py-16">
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:py-16">
         <div className="w-full max-w-xl">
           <Header
             account={account}
@@ -87,12 +89,12 @@ function App() {
             onSwitchNetwork={handleSwitchNetwork}
           />
 
-          <div className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-soft backdrop-blur">
+          <div className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-soft backdrop-blur sm:rounded-3xl sm:p-6">
             {account ? (
               <AccountOverview formatted={formatted} tokenMeta={tokenMeta} balances={balances} />
             ) : (
-              <div className="mb-6 rounded-2xl border border-border/80 bg-background/40 p-6 text-center">
-                <p className="text-sm text-gray-400">
+              <div className="mb-4 rounded-xl border border-border/80 bg-background/40 p-4 text-center sm:mb-6 sm:rounded-2xl sm:p-6">
+                <p className="text-xs text-gray-400 sm:text-sm">
                   Connect your wallet to stake ETH and start earning ORCA emissions.
                 </p>
               </div>
@@ -139,6 +141,7 @@ function App() {
               />
               )}
 
+            <NetworkConnectionWarning hasErrors={hasNetworkErrors} />
             <NetworkWarning 
               account={account} 
               isCorrectNetwork={isCorrectNetwork}
