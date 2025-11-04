@@ -50,15 +50,15 @@ export const useBalances = (account, isConnected) => {
   const [enableFetch3, setEnableFetch3] = useState(false)
   const [enableFetch4, setEnableFetch4] = useState(false)
 
-  // Stagger initial fetches to avoid hitting rate limits
+  // Stagger initial fetches to avoid hitting rate limits - use longer delays
   useEffect(() => {
     if (account && isConnected) {
       // Enable first fetch immediately
       setEnableFetch1(true)
-      // Enable subsequent fetches with delays
-      const timer2 = setTimeout(() => setEnableFetch2(true), 1000)
-      const timer3 = setTimeout(() => setEnableFetch3(true), 2000)
-      const timer4 = setTimeout(() => setEnableFetch4(true), 3000)
+      // Enable subsequent fetches with longer delays to prevent rate limiting
+      const timer2 = setTimeout(() => setEnableFetch2(true), 2000)  // 2 seconds
+      const timer3 = setTimeout(() => setEnableFetch3(true), 4000)  // 4 seconds
+      const timer4 = setTimeout(() => setEnableFetch4(true), 6000)  // 6 seconds
       
       return () => {
         clearTimeout(timer2)
@@ -403,9 +403,9 @@ export const useBalances = (account, isConnected) => {
     if (account && isConnected) {
       try {
         // Wait for blockchain state to update
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
-        // Sequential refetch with longer delays to avoid resource exhaustion
+        // Sequential refetch with much longer delays to avoid rate limiting
         try {
           await refetchEth()
         } catch (error) {
@@ -415,8 +415,8 @@ export const useBalances = (account, isConnected) => {
           }
         }
         
-        // Wait longer between requests to avoid resource exhaustion
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Wait longer between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
         if (hasStakingContract) {
           // Refetch critical data first with delays to avoid rate limits
@@ -428,8 +428,8 @@ export const useBalances = (account, isConnected) => {
             }
           }
           
-          // Add longer delay between requests to avoid resource exhaustion
-          await new Promise(resolve => setTimeout(resolve, 1500))
+          // Add longer delay between requests to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 2000))
           
           try {
             await refetchRewards()
@@ -443,11 +443,11 @@ export const useBalances = (account, isConnected) => {
           // Use longer delays for less critical data
           setTimeout(() => {
             refetchTotalStaked().catch(() => {})
-          }, 3000)
+          }, 5000)
         }
         
         if (hasTokenContract) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 2000))
           try {
             await refetchOrca()
           } catch (error) {

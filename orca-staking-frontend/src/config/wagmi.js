@@ -40,53 +40,48 @@ const createRPCTransport = (url, timeout = 30000, options = {}) => {
   })
 }
 
-// Prioritized RPC list - more reliable providers first
+// Prioritized RPC list - only use configured RPC URL
 const rpcProviders = []
 
-// Add reliable public RPCs first (no rate limits or higher limits)
-// Set retryCount to 0 for all - let fallback handle provider switching
-rpcProviders.push(
-  // Public node (reliable, no rate limits)
-  createRPCTransport('https://ethereum-sepolia-rpc.publicnode.com', 30000, { retryCount: 0 }),
-  // Sepolia Foundation RPC (official, more reliable)
-  createRPCTransport('https://rpc.sepolia.org', 30000, { retryCount: 0 }),
-  // Additional fallback (reliable)
-  createRPCTransport('https://1rpc.io/sepolia', 30000, { retryCount: 0 }),
-)
-
-// Add primary RPC (Infura) last if provided - it's rate limited
-// This way fallbacks are tried first if primary fails
+// Only use the configured RPC URL (QuickNode/Infura/Alchemy) - no free public RPCs
+// Free public RPCs cause ERR_INSUFFICIENT_RESOURCES errors
 if (RPC_URL) {
   rpcProviders.push(
     createRPCTransport(RPC_URL, 30000, { 
-      retryCount: 0 // Don't retry - use fallbacks instead
+      retryCount: 0 // Don't retry - just fail gracefully if it doesn't work
     })
   )
+} else {
+  // Fallback warning if no RPC URL is configured
+  console.warn('⚠️ No VITE_RPC_URL configured. Please set a reliable RPC endpoint in your .env file.')
 }
 
-const sepoliaTransport = fallback(rpcProviders, {
-  rank: false, // Don't rank by speed, use order
-  retryCount: 2, // Reduced retries across all providers to avoid rate limits
-  retryDelay: (failureCount, error) => {
-    // Check for resource exhaustion errors
-    const isResourceError = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
-                           error?.message?.includes('Insufficient resources') ||
-                           error?.message?.includes('net::ERR_INSUFFICIENT_RESOURCES')
-    
-    // Handle 429 rate limit errors - skip provider immediately
-    const is429 = error?.status === 429 || 
-                 error?.message?.includes('429') ||
-                 error?.message?.includes('Too Many Requests')
-    
-    if (isResourceError || is429) {
-      // Immediate switch to next provider on rate limit or resource error
-      return 100
-    }
-    
-    // Normal delay between provider switches
-    return 1000
-  },
-})
+// If we only have one provider, don't use fallback - just use it directly
+const sepoliaTransport = rpcProviders.length === 1 
+  ? rpcProviders[0] // Single provider - no fallback needed
+  : fallback(rpcProviders, {
+      rank: false, // Don't rank by speed, use order
+      retryCount: 1, // Minimal retries to avoid rate limits
+      retryDelay: (failureCount, error) => {
+        // Check for resource exhaustion errors
+        const isResourceError = error?.message?.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                               error?.message?.includes('Insufficient resources') ||
+                               error?.message?.includes('net::ERR_INSUFFICIENT_RESOURCES')
+        
+        // Handle 429 rate limit errors - wait longer before retry
+        const is429 = error?.status === 429 || 
+                     error?.message?.includes('429') ||
+                     error?.message?.includes('Too Many Requests')
+        
+        if (isResourceError || is429) {
+          // Long delay on rate limit - don't retry immediately
+          return 10000 // Wait 10 seconds before retry
+        }
+        
+        // Normal delay between provider switches
+        return 2000
+      },
+    })
 
 export const wagmiConfig = createConfig({
   chains,

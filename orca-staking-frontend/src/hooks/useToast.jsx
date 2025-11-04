@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, CheckCircle2, AlertTriangle, X } from 'lucide-react'
 
 const getToastIcon = (type) => {
@@ -32,13 +32,15 @@ const TOAST_VARIANTS = {
 export const useToast = () => {
   const [toast, setToast] = useState(null)
 
-  const showToast = (type, message) => {
+  // Memoize showToast to prevent unnecessary re-renders and infinite loops
+  const showToast = useCallback((type, message) => {
     setToast({ type, message, timestamp: Date.now() })
-  }
+  }, [])
 
-  const hideToast = () => {
+  // Memoize hideToast as well
+  const hideToast = useCallback(() => {
     setToast(null)
-  }
+  }, [])
 
   useEffect(() => {
     if (!toast) return undefined

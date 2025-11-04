@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
 import { stakingWithEmissionsAbi } from '../abi/stakingWithEmissions'
 import { parseEtherSafe } from '../utils/validators'
@@ -14,7 +13,9 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     claim: false,
   })
 
-  const queryClient = useQueryClient()
+  // Track which transaction hash we've already processed to prevent duplicate toasts
+  const processedHashRef = useRef(null)
+
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   // Wait for transaction receipt
@@ -22,29 +23,29 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     hash,
   })
 
-  // Handle transaction success/error
+  // Handle transaction success/error - only process each hash once
   useEffect(() => {
-    if (isSuccess && hash) {
+    // Only process if we have a hash and haven't processed it yet
+    if (isSuccess && hash && processedHashRef.current !== hash) {
+      processedHashRef.current = hash // Mark as processed
       showToast('success', 'Transaction confirmed!')
       setIsLoading({ stake: false, unstake: false, claim: false })
       
-      // Invalidate all wagmi queries to force refresh
-      queryClient.invalidateQueries()
-      
-      // Also manually refresh balances with delays
-      setTimeout(() => {
-        refreshBalances()
-      }, 1000)
-      
-      // Second refresh after a longer delay to ensure blockchain state is fully updated
-      setTimeout(() => {
-        refreshBalances()
-      }, 5000)
-    } else if (isError || error) {
+      // Don't automatically refresh balances - it causes unnecessary RPC calls
+      // The UI will update naturally through normal refetch mechanisms
+      // User can manually refresh if needed via the refresh button
+      // This prevents rate limiting after transactions
+    } else if ((isError || error) && hash && processedHashRef.current !== hash) {
+      processedHashRef.current = hash // Mark as processed
       showToast('error', error?.message ?? 'Transaction failed')
       setIsLoading({ stake: false, unstake: false, claim: false })
     }
-  }, [isSuccess, isError, error, hash, showToast, refreshBalances, queryClient])
+    
+    // Reset processed hash when hash changes (new transaction started)
+    if (hash && hash !== processedHashRef.current && !isSuccess && !isError) {
+      processedHashRef.current = null
+    }
+  }, [isSuccess, isError, error, hash]) // Removed showToast from dependencies to prevent infinite loop
 
   const handleStake = async () => {
     const amountWei = parseEtherSafe(inputs.stake)
