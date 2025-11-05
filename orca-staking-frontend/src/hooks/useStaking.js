@@ -5,7 +5,7 @@ import { stakingWithEmissionsAbi } from '../abi/stakingWithEmissions'
 import { parseEtherSafe } from '../utils/validators'
 import { STAKING_CONTRACT_ADDRESS } from '../config'
 
-export const useStaking = (account, isCorrectNetwork, balances, refreshBalances, showToast) => {
+export const useStaking = (account, isCorrectNetwork, balances, refreshBalances, refreshRewardsOnly, showToast) => {
   const [inputs, setInputs] = useState({ stake: '', unstake: '' })
   const [isLoading, setIsLoading] = useState({
     stake: false,
@@ -23,6 +23,9 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     hash,
   })
 
+  // Track the last transaction type to handle post-success actions
+  const lastTxTypeRef = useRef(null)
+
   // Handle transaction success/error - only process each hash once
   useEffect(() => {
     // Only process if we have a hash and haven't processed it yet
@@ -31,10 +34,19 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
       showToast('success', 'Transaction confirmed!')
       setIsLoading({ stake: false, unstake: false, claim: false })
       
-      // Don't automatically refresh balances - it causes unnecessary RPC calls
-      // The UI will update naturally through normal refetch mechanisms
-      // User can manually refresh if needed via the refresh button
-      // This prevents rate limiting after transactions
+      // For claim transactions, refresh rewards after a delay to show updated balance
+      if (lastTxTypeRef.current === 'claim') {
+        setTimeout(() => {
+          // Use specific rewards refresh function for better performance
+          if (refreshRewardsOnly) {
+            refreshRewardsOnly()
+          } else if (refreshBalances) {
+            refreshBalances()
+          }
+        }, 3000) // Wait 3 seconds for blockchain state to update
+      }
+      // For other transactions (stake/unstake), don't auto-refresh to avoid rate limiting
+      // User can manually refresh if needed
     } else if ((isError || error) && hash && processedHashRef.current !== hash) {
       processedHashRef.current = hash // Mark as processed
       showToast('error', error?.message ?? 'Transaction failed')
@@ -45,7 +57,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     if (hash && hash !== processedHashRef.current && !isSuccess && !isError) {
       processedHashRef.current = null
     }
-  }, [isSuccess, isError, error, hash]) // Removed showToast from dependencies to prevent infinite loop
+  }, [isSuccess, isError, error, hash, refreshBalances, refreshRewardsOnly]) // Added refresh functions to dependencies
 
   const handleStake = async () => {
     const amountWei = parseEtherSafe(inputs.stake)
@@ -60,6 +72,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     }
 
     setIsLoading((prev) => ({ ...prev, stake: true }))
+    lastTxTypeRef.current = 'stake' // Track transaction type
     showToast('pending', 'Transaction pending...')
 
     try {
@@ -75,6 +88,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
       console.error('Stake failed', err)
       showToast('error', err?.message ?? 'Transaction failed')
       setIsLoading((prev) => ({ ...prev, stake: false }))
+      lastTxTypeRef.current = null // Reset on error
     }
   }
 
@@ -86,6 +100,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
     }
 
     setIsLoading((prev) => ({ ...prev, unstake: true }))
+    lastTxTypeRef.current = 'unstake' // Track transaction type
     showToast('pending', 'Transaction pending...')
 
     try {
@@ -100,11 +115,13 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
       console.error('Unstake failed', err)
       showToast('error', err?.message ?? 'Transaction failed')
       setIsLoading((prev) => ({ ...prev, unstake: false }))
+      lastTxTypeRef.current = null // Reset on error
     }
   }
 
   const handleClaim = async () => {
     setIsLoading((prev) => ({ ...prev, claim: true }))
+    lastTxTypeRef.current = 'claim' // Track that this is a claim transaction
     showToast('pending', 'Transaction pending...')
 
     try {
@@ -117,6 +134,7 @@ export const useStaking = (account, isCorrectNetwork, balances, refreshBalances,
       console.error('Claim failed', err)
       showToast('error', err?.message ?? 'Transaction failed')
       setIsLoading((prev) => ({ ...prev, claim: false }))
+      lastTxTypeRef.current = null // Reset on error
     }
   }
 

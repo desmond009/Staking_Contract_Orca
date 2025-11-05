@@ -33,6 +33,7 @@ function App() {
     balances,
     tokenMeta,
     refreshBalances,
+    refreshRewardsOnly,
     hasNetworkErrors,
   } = useBalances(account, isConnected)
 
@@ -57,7 +58,7 @@ function App() {
     claimDisabled,
     stakeAmountWei,
     unstakeAmountWei,
-  } = useStaking(account, isCorrectNetwork, balances, refreshBalances, showToast)
+  } = useStaking(account, isCorrectNetwork, balances, refreshBalances, refreshRewardsOnly, showToast)
 
   const handleConnectWallet = async () => {
     try {

@@ -463,6 +463,39 @@ export const useBalances = (account, isConnected) => {
     }
   }
 
+  // Specific function to refresh rewards only (for after claim)
+  const refreshRewardsOnly = async () => {
+    if (account && isConnected && hasStakingContract) {
+      try {
+        // Wait a bit for blockchain state to update after transaction
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Refetch rewards and ORCA balance (since claiming mints tokens)
+        const promises = [
+          refetchRewards().catch(err => {
+            if (!isRateLimitError(err) && !isTimeoutError(err) && !isResourceError(err)) {
+              console.warn('Failed to refresh rewards:', err.message)
+            }
+          })
+        ]
+        
+        if (hasTokenContract) {
+          promises.push(
+            refetchOrca().catch(err => {
+              if (!isRateLimitError(err) && !isTimeoutError(err) && !isResourceError(err)) {
+                console.warn('Failed to refresh ORCA balance:', err.message)
+              }
+            })
+          )
+        }
+        
+        await Promise.all(promises)
+      } catch (error) {
+        console.error('Error refreshing rewards:', error)
+      }
+    }
+  }
+
   // Check if there are any critical errors (excluding timeouts, rate limits, and resource errors)
   const hasNetworkErrors = !!(
     (ethBalanceError && !isTimeoutError(ethBalanceError) && !isRateLimitError(ethBalanceError) && !isResourceError(ethBalanceError)) ||
@@ -476,6 +509,7 @@ export const useBalances = (account, isConnected) => {
     tokenMeta,
     refreshBalances,
     refreshPendingRewards: refetchRewards,
+    refreshRewardsOnly,
     hasNetworkErrors,
   }
 }
