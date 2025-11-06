@@ -147,10 +147,12 @@ export const useBalances = (account, isConnected) => {
   })
 
   // Fetch pending rewards - third priority
+  // Note: getRewards() uses msg.sender, so wagmi will use the connected account automatically
   const { data: pendingRewards, refetch: refetchRewards, error: pendingRewardsError } = useReadContract({
     address: hasStakingContract && STAKING_CONTRACT_ADDRESS !== ZERO_ADDRESS ? STAKING_CONTRACT_ADDRESS : undefined,
     abi: stakingWithEmissionsAbi,
     functionName: 'getRewards',
+    account: account, // Explicitly set account for msg.sender context
     enabled: enableFetch3 && !!account && isConnected && hasStakingContract,
     query: {
       refetchInterval: false, // Disable auto-refetch to reduce concurrent requests
@@ -348,7 +350,14 @@ export const useBalances = (account, isConnected) => {
       }
     }
     
+    // Pending rewards are returned in wei (1 ORCA = 1e18 wei)
+    // The contract returns: timeDiff * amountStaked * REWARD_PER_SEC_PER_ETH + rewardDebt
+    // For 0.0005 ETH staked for 1 day:
+    // - 0.0005 ETH = 5e14 wei
+    // - 1 day = 86400 seconds
+    // - Rewards = 86400 * 5e14 * 1 = 4.32e19 wei = 43.2 ORCA
     const pending = pendingRewards ?? 0n
+    
     const total = totalStaked ?? 0n
     const orca = orcaBalance ?? 0n
 
@@ -361,6 +370,7 @@ export const useBalances = (account, isConnected) => {
         stakersBalance: stakersBalance?.toString() || 'undefined',
         userInfo,
         userStake: userStake.toString(),
+        pendingRaw: pendingRewards?.toString() || 'undefined',
         pending: pending.toString(),
         total: total.toString(),
         orca: orca.toString(),

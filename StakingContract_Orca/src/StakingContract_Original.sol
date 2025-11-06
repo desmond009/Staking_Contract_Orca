@@ -38,7 +38,11 @@ contract StakingContract_Original {
 
         uint timeDiff = block.timestamp - user.lastRewardTime;
 
-        uint additionalReward = (timeDiff * user.amountStaked * REWARD_PER_SEC_PER_ETH) / 1e18;
+        // REWARD_PER_SEC_PER_ETH = 1 means 1 ORCA per second per ETH staked
+        // Since 1 ETH = 1e18 wei and 1 ORCA = 1e18 wei, we multiply by 1e18 to get wei
+        // Formula: (timeDiff * amountStaked * REWARD_PER_SEC_PER_ETH * 1e18) / 1e18
+        // Simplified: timeDiff * amountStaked * REWARD_PER_SEC_PER_ETH
+        uint additionalReward = timeDiff * user.amountStaked * REWARD_PER_SEC_PER_ETH;
 
         user.rewardDebt += additionalReward;
         user.lastRewardTime = block.timestamp;
@@ -87,12 +91,23 @@ contract StakingContract_Original {
     // Get Rewards or Print Rewards
     function getRewards() public view returns (uint256) {
         UserInfo storage user = userInfo[msg.sender];
+        
+        // If user hasn't staked yet, return 0
+        if(user.amountStaked == 0 || user.lastRewardTime == 0){
+            return user.rewardDebt;
+        }
+        
         uint timeDiff = block.timestamp - user.lastRewardTime;
 
         if(timeDiff == 0){
             return user.rewardDebt;
         }
 
-        return ((timeDiff * user.amountStaked * REWARD_PER_SEC_PER_ETH) + user.rewardDebt);
+        // Calculate new rewards - same formula as _updateRewards()
+        // REWARD_PER_SEC_PER_ETH = 1 means 1 ORCA per second per ETH staked
+        // Returns value in wei (1 ORCA = 1e18 wei)
+        uint newRewards = timeDiff * user.amountStaked * REWARD_PER_SEC_PER_ETH;
+        
+        return newRewards + user.rewardDebt;
     }
  }
